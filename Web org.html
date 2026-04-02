@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>StudyForge Pro | Smart Schedule AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: linear-gradient(145deg, #f0f7ff 0%, #e2e8f0 100%); min-height: 100vh; padding: 20px; }
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-card { background: white; border-radius: 48px; padding: 40px 32px; max-width: 480px; width: 90%; box-shadow: 0 30px 50px rgba(0,0,0,0.3); animation: fadeInUp 0.4s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px);} to { opacity: 1; transform: translateY(0);} }
+        .login-card h2 { font-size: 2rem; background: linear-gradient(135deg, #1E3C72, #2A5298); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; margin-bottom: 24px; }
+        .login-card input, .login-card select { width: 100%; padding: 14px 18px; margin: 10px 0; border-radius: 60px; border: 1.5px solid #e2e8f0; font-size: 1rem; }
+        .login-card button { width: 100%; background: #2A5298; color: white; padding: 14px; border-radius: 60px; font-weight: bold; font-size: 1.1rem; margin-top: 16px; cursor: pointer; border: none; transition: 0.2s; }
+        .toggle-form { text-align: center; margin-top: 20px; color: #2A5298; cursor: pointer; font-weight: 500; }
+        .error-msg { color: #dc2626; font-size: 0.8rem; text-align: center; margin-top: 8px; }
+        .dashboard { max-width: 1500px; margin: 0 auto; display: none; }
+        .nav-bar { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-radius: 60px; padding: 8px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+        .nav-link { background: transparent; color: #1E3C72; font-weight: 600; cursor: pointer; padding: 8px 16px; border-radius: 40px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background: #2A5298; color: white; }
+        .stats-badge { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .badge { background: white; padding: 6px 16px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; }
+        .logout-btn { background: #dc2626; padding: 6px 16px; border-radius: 40px; cursor: pointer; color: white; font-weight: 600; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; margin-bottom: 30px; }
+        .card { background: rgba(255,255,255,0.94); backdrop-filter: blur(4px); border-radius: 32px; padding: 20px 24px; box-shadow: 0 12px 28px rgba(0,0,0,0.08); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-3px); }
+        .card h2 { font-size: 1.3rem; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; border-left: 5px solid #2A5298; padding-left: 15px; }
+        button { background: #2A5298; border: none; padding: 8px 16px; border-radius: 40px; color: white; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        button:hover { transform: scale(0.97); filter: brightness(1.05); }
+        .timer-area { text-align: center; }
+        #timerDisplay { font-size: 2.8rem; font-weight: 800; font-family: monospace; background: #0f172a; display: inline-block; padding: 10px 24px; border-radius: 60px; color: #0ef; letter-spacing: 3px; margin: 10px 0; }
+        .ai-robot { background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 40px; padding: 16px 20px; display: flex; align-items: center; gap: 20px; margin-bottom: 24px; color: white; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        .robot-avatar { font-size: 3.5rem; background: #2A5298; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(66,153,225,0.5); transition: all 0.3s; }
+        .robot-message { flex: 1; font-size: 1rem; }
+        .robot-emotion { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; }
+        .time-range-card { background: linear-gradient(135deg, #eef2ff, #ffffff); border-radius: 28px; padding: 16px; margin-bottom: 16px; }
+        .time-input-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+        .time-input-group label { font-weight: 600; color: #1e293b; }
+        .schedule-list { background: #eef2ff; border-radius: 24px; padding: 12px; max-height: 500px; overflow-y: auto; }
+        .schedule-block { background: white; margin: 10px 0; padding: 14px 16px; border-radius: 20px; border-left: 4px solid #2A5298; transition: 0.1s; }
+        .interval-badge { display: inline-block; background: #2A5298; color: white; border-radius: 30px; padding: 2px 10px; font-size: 0.7rem; margin-left: 10px; }
+        .subjects-container { display: flex; flex-direction: column; gap: 16px; max-height: 500px; overflow-y: auto; }
+        .subject-task-card { background: #f8fafc; border-radius: 24px; padding: 12px; border-left: 4px solid #2A5298; }
+        .task-list { list-style: none; }
+        .task-item { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 20px; padding: 8px 12px; margin: 6px 0; }
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 12px; font-size: 0.75rem; }
+        .week-day { background: #eef2ff; border-radius: 20px; padding: 8px; text-align: center; }
+        .class-badge { background: white; border-radius: 20px; padding: 4px; margin-top: 4px; font-size: 10px; }
+        .chart-container { margin-top: 16px; }
+        canvas { max-height: 250px; width: 100%; }
+        .watermark { text-align: center; margin-top: 30px; padding: 15px; font-size: 0.8rem; color: #64748b; border-top: 1px solid rgba(0,0,0,0.1); }
+        footer { text-align: center; margin-top: 20px; font-size: 0.7rem; color: #94a3b8; }
+        @media (max-width: 780px) { .week-grid { font-size: 0.6rem; } .robot-avatar { width: 50px; height: 50px; font-size: 2rem; } }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+        <h2><i class="fas fa-robot"></i> StudyForge Pro</h2>
+        <div id="loginFormContainer">
+            <input type="email" id="loginEmail" placeholder="Email Address">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+            <div class="toggle-form" id="showSignupBtn">🚀 New user? Create Account →</div>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+        <div id="signupFormContainer" style="display:none;">
+            <input type="text" id="signupName" placeholder="Full Name">
+            <input type="email" id="signupEmail" placeholder="Email">
+            <input type="password" id="signupPassword" placeholder="Password (min 4 chars)">
+            <select id="signupExamLevel"><option value="OL">O/L</option><option value="AL">A/L</option></select>
+            <input type="number" id="signupExamYear" placeholder="Exam Year">
+            <button id="doSignupBtn"><i class="fas fa-user-plus"></i> Sign Up</button>
+            <div class="toggle-form" id="showLoginBtn">← Back to Login</div>
+            <div id="signupError" class="error-msg"></div>
+        </div>
+    </div>
+</div>
+
+<div id="mainApp" class="dashboard">
+    <div class="nav-bar">
+        <div class="logo"><h1><i class="fas fa-graduation-cap"></i> StudyForge</h1></div>
+        <div class="nav-links">
+            <div class="nav-link active" data-section="dashboard">📊 Dashboard</div>
+            <div class="nav-link" data-section="tasks">📝 Subject Tasks</div>
+            <div class="nav-link" data-section="schedule">⏰ Daily Schedule</div>
+            <div class="nav-link" data-section="classes">🏫 Weekly Classes</div>
+            <div class="nav-link" data-section="settings">⚙️ Settings</div>
+        </div>
+        <div class="stats-badge">
+            <div class="badge"><i class="fas fa-clock"></i> Today: <span id="totalStudiedToday">0</span> min</div>
+            <div class="badge"><i class="fas fa-tasks"></i> Tasks: <span id="taskCount">0</span></div>
+            <div class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Exit</div>
+        </div>
+    </div>
+
+    <div class="ai-robot" id="aiRobot">
+        <div class="robot-avatar" id="robotAvatar">🤖</div>
+        <div class="robot-message">
+            <div id="robotMessage">Set your wake-up & bedtime, I'll create your smart study plan! 🎯</div>
+            <div class="robot-emotion" id="robotEmotion">😊 Ready to help!</div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="section active">
+        <div class="grid">
+            <div class="card">
+                <h2><i class="fas fa-hourglass-half"></i> Study Timer</h2>
+                <div class="timer-area">
+                    <div id="timerDisplay">00:00:00</div>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin: 12px 0;">
+                        <button id="startTimerBtn"><i class="fas fa-play"></i> Start</button>
+                        <button id="pauseTimerBtn" class="secondary"><i class="fas fa-pause"></i> Pause</button>
+                        <button id="resetTimerBtn" class="danger"><i class="fas fa-stop"></i> Reset</button>
+                    </div>
+                    <p>Today's Study: <strong id="todayStudyMinutes">0</strong> minutes</p>
+                    <div style="background:#ddd; border-radius:20px;"><div id="goalProgress" style="width:0%; background:#2A5298; height:10px; border-radius:20px;"></div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-sun"></i> My Day Settings</h2>
+                <div class="time-range-card">
+                    <div class="time-input-group">
+                        <label><i class="fas fa-sun"></i> Wake Up Time:</label>
+                        <input type="time" id="wakeUpTime" value="07:00" style="padding: 10px; border-radius: 40px; border:1px solid #ccc;">
+                    </div>
+                    <div class="time-input-group">
+                        <label><i class="fas fa-moon"></i> Go to Bed Time:</label>
+                        <input type="time" id="bedTime" value="23:00" style="padding: 10px; border-radius: 40px; border:1px solid #ccc;">
+                    </div>
+                    <div class="time-input-group">
+                        <label><i class="fas fa-hourglass-half"></i> Study Interval (minutes):</label>
+                        <input type="number" id="intervalMinutes" value="50" min="15" max="120" style="padding: 10px; border-radius: 40px; width:100px;">
+                        <label>Break:</label>
+                        <input type="number" id="breakMinutes" value="10" min="5" max="30" style="padding: 10px; border-radius: 40px; width:100px;">
+                    </div>
+                    <button id="generateCustomTimetableBtn" style="margin-top:10px; width:100%"><i class="fas fa-magic"></i> Generate My Daily Schedule</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-chart-line"></i> Weekly Performance</h2>
+                <div class="chart-container"><canvas id="weeklyPerformanceChart"></canvas></div>
+                <p style="font-size:12px; margin-top:10px; text-align:center;">📊 Tasks completed per subject</p>
+            </div>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h2><i class="fas fa-calendar-alt"></i> Today's Smart Schedule</h2>
+                <div id="smartTimetableView" class="schedule-list"></div>
+                <p style="font-size:12px; margin-top:10px; text-align:center;">⏰ Based on your wake-up & bedtime with study/break intervals</p>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-hourglass-start"></i> Exam Countdown</h2>
+                <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color:white; border-radius:28px; padding:16px; text-align:center;">
+                    <div id="countdownDisplay" style="font-size:1.5rem; font-weight:bold;">--</div>
+                    <button id="setCountdownBtn" class="secondary" style="margin-top:12px;">Set Exam Date</button>
+                </div>
+                <div style="margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; margin:10px 0;"><span><i class="fas fa-bell"></i> Reminders (45min)</span><input type="checkbox" id="reminderToggle"></div>
+                    <div style="display:flex; justify-content:space-between; margin:10px 0;"><span><i class="fas fa-music"></i> Background Audio</span><button id="bgAudioBtn" class="secondary">Play/Pause</button></div>
+                    <button id="testNotifBtn" style="margin-top:12px; width:100%;">Test Notification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Tasks Section -->
+    <div id="tasksSection" class="section">
+        <div class="card">
+            <h2><i class="fas fa-book-open"></i> Subject-wise Tasks</h2>
+            <div id="subjectTasksContainer" class="subjects-container"></div>
+            <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap:wrap;">
+                <input type="text" id="newSubjectTaskInput" placeholder="Task description" style="flex:2; padding: 10px; border-radius: 40px; border:1px solid #ccc;">
+                <select id="taskSubjectSelect" style="padding: 10px; border-radius: 40px;"></select>
+                <button id="addSubjectTaskBtn" class="success"><i class="fas fa-plus"></i> Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Schedule Section -->
+    <div id="scheduleSection" class="section">
+        <div class="card">
+            <h2><i class="fas fa-calendar-day"></i> Your Personalized Daily Schedule</h2>
+            <div class="time-range-card">
+                <div class="time-input-group">
+                    <label><i class="fas fa-sun"></i> Wake Up:</label>
+                    <input type="time" id="scheduleWakeUp" style="padding: 8px; border-radius: 40px;">
+                    <label><i class="fas fa-moon"></i> Bed Time:</label>
+                    <input type="time" id="scheduleBedTime" style="padding: 8px; border-radius: 40px;">
+                    <label>Study:</label>
+                    <input type="number" id="scheduleInterval" placeholder="min" style="width:70px; padding:8px; border-radius:40px;">
+                    <label>Break:</label>
+                    <input type="number" id="scheduleBreak" placeholder="min" style="width:70px; padding:8px; border-radius:40px;">
+                    <button id="refreshScheduleBtn" class="secondary">Refresh</button>
+                </div>
+            </div>
+            <div id="fullScheduleView" class="schedule-list"></div>
+        </div>
+    </div>
+
+    <!-- Weekly Classes Section -->
+    <div id="classesSection" class="section">
+        <div class="card">
+            <h2><i class="fas fa-chalkboard"></i> Weekly Class Schedule</h2>
+            <div id="weeklyScheduleView" class="week-grid"></div>
+            <button id="openSettingsBtn" style="margin-top:16px; width:100%;">✏️ Edit Weekly Classes in Settings</button>
+        </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div id="settingsSection" class="section">
+        <div class="card">
+            <h2><i class="fas fa-sliders-h"></i> User Settings</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px;">
+                <div><h3>Profile</h3><input type="text" id="userName" placeholder="Name" style="width:100%; margin:5px 0; padding:10px; border-radius:40px;"><input type="email" id="userEmail" placeholder="Email" style="width:100%; margin:5px 0; padding:10px; border-radius:40px;"><select id="examLevel" style="width:100%; padding:10px; border-radius:40px;"><option>OL</option><option>AL</option></select><input type="number" id="examYear" placeholder="Exam Year" style="width:100%; margin:5px 0; padding:10px; border-radius:40px;"><button id="saveProfileBtn" class="success">Save Profile</button></div>
+                <div><h3>Subjects for Tasks</h3><div id="subjectsManager"></div><button id="saveSubjectsBtn" class="secondary">Update Subjects</button><h3 style="margin-top:16px;">Weekly Classes Editor</h3><div id="weeklyEditor" style="max-height:250px; overflow:auto;"></div><button id="saveWeeklyClassesBtn" style="margin-top:8px;">Save Weekly</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="watermark">✨ Developed by <strong>Methuka Nisalitha</strong> | AI Study Companion ✨</div>
+    <footer>🎯 Smart schedule based on your wake-up & bedtime • Study/break intervals • No fixed 10h rule</footer>
+</div>
+
+<script>
+    // DATABASE
+    let currentUserEmail = null, currentUserData = null;
+    function hash(pwd) { return btoa(pwd + "forgeSalt2025"); }
+    function getDB() { return JSON.parse(localStorage.getItem('studyforge_users_final_v4') || '{}'); }
+    function saveDB(db) { localStorage.setItem('studyforge_users_final_v4', JSON.stringify(db)); }
+    
+    const DEFAULT_SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "History", "English"];
+    
+    function defaultUserData(profile) {
+        let subjectTasks = {};
+        DEFAULT_SUBJECTS.forEach(subj => { subjectTasks[subj] = []; });
+        return {
+            profile: { name: profile.name, email: profile.email, examLevel: profile.examLevel, examYear: profile.examYear },
+            studyMinutesToday: 0,
+            subjectTasks: subjectTasks,
+            userSubjects: [...DEFAULT_SUBJECTS],
+            weeklyClasses: { Monday:[], Tuesday:[], Wednesday:[], Thursday:[], Friday:[], Saturday:[], Sunday:[] },
+            examDate: new Date(new Date().getFullYear()+1, 5, 15).toISOString(),
+            reminderEnabled: false,
+            lastGoalNotif: 0,
+            wakeUpTime: "07:00",
+            bedTime: "23:00",
+            studyInterval: 50,
+            breakInterval: 10
+        };
+    }
+    
+    function signup(name, email, pwd, level, year) {
+        let db = getDB();
+        if(db[email]) return { success: false, error: "Email already exists!" };
+        if(pwd.length < 4) return { success: false, error: "Password min 4 characters" };
+        let profile = { name, email, examLevel: level, examYear: parseInt(year) };
+        db[email] = { passwordHash: hash(pwd), data: defaultUserData(profile) };
+        saveDB(db);
+        return { success: true };
+    }
+    function login(email, pwd) {
+        let db = getDB();
+        let user = db[email];
+        if(!user) return { success: false, error: "User not found" };
+        if(user.passwordHash !== hash(pwd)) return { success: false, error: "Wrong password" };
+        return { success: true, data: user.data };
+    }
+    function persist() { if(currentUserEmail && currentUserData) { let db = getDB(); if(db[currentUserEmail]) { db[currentUserEmail].data = currentUserData; saveDB(db); } } }
+    
+    // AI Robot
+    const emotions = [
+        { icon: "🤗", msg: "Set your wake-up time and I'll plan your day!", mood: "Encouraging" },
+        { icon: "🧠", msg: "Smart scheduling helps you balance study & rest!", mood: "Wise" },
+        { icon: "⚡", msg: "Study intervals keep you focused!", mood: "Energetic" },
+        { icon: "😊", msg: "You decide how much to study today!", mood: "Happy" }
+    ];
+    function updateRobotEmotion() {
+        const randomEmo = emotions[Math.floor(Math.random() * emotions.length)];
+        document.getElementById('robotAvatar').innerHTML = randomEmo.icon;
+        document.getElementById('robotMessage').innerHTML = randomEmo.msg;
+        document.getElementById('robotEmotion').innerHTML = `✨ ${randomEmo.mood} mode ✨`;
+        const avatar = document.getElementById('robotAvatar');
+        avatar.style.transform = 'scale(1.1)';
+        setTimeout(() => { if(avatar) avatar.style.transform = 'scale(1)'; }, 300);
+    }
+    setInterval(updateRobotEmotion, 14000);
+    
+    // APP STATE
+    let studySeconds = 0, timerInterval = null, isRunning = false, currentSessionSeconds = 0;
+    let countdownInterval = null, reminderInterval = null;
+    let audioCtx = null, audioSource = null, audioPlaying = false, audioBuffer = null;
+    let weeklyChart = null;
+    
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ return m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'; }); }
+    function formatTime(sec) { let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
+    function updateTimerUI() { document.getElementById('timerDisplay').innerText = formatTime(studySeconds); }
+    function addStudiedMinutes(min) { if(min>0) { currentUserData.studyMinutesToday += min; updateStudyUI(); checkGoalNotif(); persist(); } }
+    function recordSession() { if(currentSessionSeconds>0) { addStudiedMinutes(Math.floor(currentSessionSeconds/60)); currentSessionSeconds=0; } }
+    function updateStudyUI() { document.getElementById('todayStudyMinutes').innerText = currentUserData.studyMinutesToday; document.getElementById('totalStudiedToday').innerText = currentUserData.studyMinutesToday; let p = Math.min(100, (currentUserData.studyMinutesToday/600)*100); document.getElementById('goalProgress').style.width = p+'%'; updateTaskCounter(); }
+    function updateTaskCounter() { let total = Object.values(currentUserData.subjectTasks).flat().filter(t=>!t.completed).length; document.getElementById('taskCount').innerText = total; }
+    
+    // CORE TIMETABLE GENERATOR - FIXED
+    function generateAndRenderTimetable(containerId, wakeTime, bedTime, studyMins, breakMins) {
+        let start = wakeTime.split(':').map(Number);
+        let end = bedTime.split(':').map(Number);
+        let startMinutes = start[0]*60 + start[1];
+        let endMinutes = end[0]*60 + end[1];
+        
+        // Handle overnight (if bed time is next day)
+        if(endMinutes <= startMinutes) endMinutes += 24*60;
+        
+        let totalAvailable = endMinutes - startMinutes;
+        if(totalAvailable <= 0) {
+            document.getElementById(containerId).innerHTML = '<div style="text-align:center; padding:20px;">⚠️ Invalid time range. Please set wake-up time before bedtime.</div>';
+            return;
+        }
+        
+        let blocks = [];
+        let current = startMinutes;
+        let subjects = currentUserData.userSubjects || DEFAULT_SUBJECTS;
+        
+        while(current + studyMins <= endMinutes) {
+            let studyEnd = current + studyMins;
+            let subject = subjects[Math.floor(Math.random() * subjects.length)];
+            blocks.push({ type: "📚 STUDY", subject: subject, start: current, end: studyEnd, duration: studyMins });
+            current = studyEnd;
+            
+            if(current + breakMins <= endMinutes) {
+                blocks.push({ type: "☕ BREAK", subject: "Rest", start: current, end: current + breakMins, duration: breakMins });
+                current += breakMins;
+            } else {
+                break;
+            }
+        }
+        
+        // Add any remaining time as free time
+        if(current < endMinutes) {
+            let remaining = endMinutes - current;
+            if(remaining >= 15) {
+                blocks.push({ type: "✨ FREE TIME", subject: "Flexible", start: current, end: endMinutes, duration: remaining });
+            }
+        }
+        
+        if(blocks.length === 0) {
+            document.getElementById(containerId).innerHTML = '<div style="text-align:center; padding:20px;">⚠️ Not enough time between wake-up and bedtime for a full study interval. Adjust your times or interval length.</div>';
+            return;
+        }
+        
+        let html = `<div style="margin-bottom:12px; padding:10px; background:#e2e8f0; border-radius:20px; text-align:center;">
+                        <i class="fas fa-sun"></i> Wake: ${wakeTime} &nbsp;|&nbsp; 
+                        <i class="fas fa-moon"></i> Bed: ${bedTime} &nbsp;|&nbsp;
+                        <i class="fas fa-clock"></i> ${studyMins} min study / ${breakMins} min break
+                        <br><small>Total active hours: ${Math.floor(totalAvailable/60)}h ${totalAvailable%60}min</small>
+                    </div>`;
+        
+        blocks.forEach(block => {
+            let icon = block.type === "📚 STUDY" ? "fa-book" : (block.type === "☕ BREAK" ? "fa-coffee" : "fa-star");
+            let color = block.type === "📚 STUDY" ? "#2A5298" : (block.type === "☕ BREAK" ? "#d97706" : "#10b981");
+            let startH = Math.floor(block.start / 60) % 24;
+            let startM = block.start % 60;
+            let endH = Math.floor(block.end / 60) % 24;
+            let endM = block.end % 60;
+            html += `<div class="schedule-block" style="border-left-color: ${color};">
+                        <div><i class="fas ${icon}"></i> <strong>${block.type}</strong> ${block.type === "📚 STUDY" ? `<span class="interval-badge">${escapeHtml(block.subject)}</span>` : ''}</div>
+                        <div style="font-size:0.9rem; margin-top:5px;">
+                            ${startH.toString().padStart(2,'0')}:${startM.toString().padStart(2,'0')} → ${endH.toString().padStart(2,'0')}:${endM.toString().padStart(2,'0')}
+                            <span style="float:right;">(${block.duration} min)</span>
+                        </div>
+                    </div>`;
+        });
+        document.getElementById(containerId).innerHTML = html;
+    }
+    
+    // Subject Tasks
+    function renderSubjectTasks() {
+        const container = document.getElementById('subjectTasksContainer');
+        container.innerHTML = '';
+        const subjects = currentUserData.userSubjects;
+        subjects.forEach(subj => {
+            let tasks = currentUserData.subjectTasks[subj] || [];
+            let div = document.createElement('div'); div.className = 'subject-task-card';
+            div.innerHTML = `<div class="subject-title"><span><i class="fas fa-folder-open"></i> ${escapeHtml(subj)}</span> <span style="font-size:12px;">📌 ${tasks.filter(t=>!t.completed).length} pending | ✅ ${tasks.filter(t=>t.completed).length} done</span></div><ul class="task-list" id="tasklist-${subj.replace(/\s/g,'')}"></ul>`;
+            container.appendChild(div);
+            let listUl = div.querySelector('.task-list');
+            tasks.forEach((task, idx) => {
+                let li = document.createElement('li'); li.className = 'task-item';
+                li.innerHTML = `<div><input type="checkbox" data-subj="${subj}" data-idx="${idx}" ${task.completed?'checked':''}> <span style="${task.completed?'text-decoration:line-through':''}">${escapeHtml(task.text)}</span></div><button data-subj="${subj}" data-idx="${idx}" class="danger delSubjTask" style="background:#b91c1c; padding:4px 12px;">🗑️</button>`;
+                listUl.appendChild(li);
+            });
+        });
+        document.querySelectorAll('.delSubjTask').forEach(btn => btn.addEventListener('click', (e) => { let subj = btn.dataset.subj, idx = parseInt(btn.dataset.idx); currentUserData.subjectTasks[subj].splice(idx,1); persist(); renderSubjectTasks(); updateTaskCounter(); updateWeeklyChart(); updateRobotEmotion(); }));
+        document.querySelectorAll('input[type="checkbox"][data-subj]').forEach(cb => cb.addEventListener('change', (e) => { let subj = cb.dataset.subj, idx = parseInt(cb.dataset.idx); currentUserData.subjectTasks[subj][idx].completed = cb.checked; persist(); renderSubjectTasks(); updateTaskCounter(); updateWeeklyChart(); updateRobotEmotion(); }));
+        updateTaskCounter(); updateWeeklyChart();
+    }
+    
+    function addSubjectTask() { let text = document.getElementById('newSubjectTaskInput').value.trim(); let subject = document.getElementById('taskSubjectSelect').value; if(!text) return; if(!currentUserData.subjectTasks[subject]) currentUserData.subjectTasks[subject] = []; currentUserData.subjectTasks[subject].push({ text, completed: false }); persist(); renderSubjectTasks(); document.getElementById('newSubjectTaskInput').value = ''; updateRobotEmotion(); }
+    
+    function populateSubjectSelect() { let select = document.getElementById('taskSubjectSelect'); select.innerHTML = ''; currentUserData.userSubjects.forEach(subj => { let opt = document.createElement('option'); opt.value = subj; opt.textContent = subj; select.appendChild(opt); }); }
+    
+    function renderSubjectsManager() { let container = document.getElementById('subjectsManager'); container.innerHTML = '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">'; currentUserData.userSubjects.forEach((subj, idx) => { container.innerHTML += `<span style="background:#e2e8f0; padding:5px 12px; border-radius:30px;">${escapeHtml(subj)} <button data-subj-del="${idx}" style="background:#b91c1c; padding:2px 8px; margin-left:5px;">✖</button></span>`; }); container.innerHTML += `</div><div style="display:flex; gap:8px;"><input type="text" id="newSubjectInput" placeholder="New subject" style="flex:1; padding:8px; border-radius:40px;"><button id="addSubjectBtn" class="success">+ Add</button></div>`; document.querySelectorAll('[data-subj-del]').forEach(btn => btn.addEventListener('click', (e) => { let idx = parseInt(btn.dataset.subjDel); let removed = currentUserData.userSubjects[idx]; currentUserData.userSubjects.splice(idx,1); delete currentUserData.subjectTasks[removed]; persist(); renderSubjectsManager(); renderSubjectTasks(); populateSubjectSelect(); updateRobotEmotion(); })); document.getElementById('addSubjectBtn')?.addEventListener('click', () => { let newSubj = document.getElementById('newSubjectInput').value.trim(); if(newSubj && !currentUserData.userSubjects.includes(newSubj)) { currentUserData.userSubjects.push(newSubj); currentUserData.subjectTasks[newSubj] = []; persist(); renderSubjectsManager(); renderSubjectTasks(); populateSubjectSelect(); updateRobotEmotion(); } document.getElementById('newSubjectInput').value = ''; }); }
+    
+    // Weekly Classes
+    const weekdays = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    function renderWeeklySchedule() { let html=`<div class="week-grid">`; weekdays.forEach(day=>{ let classes = currentUserData.weeklyClasses[day]||[]; html+=`<div class="week-day"><h4>${day.slice(0,3)}</h4>`; classes.forEach(c=>{ html+=`<div class="class-badge">${escapeHtml(c.name)}<br>${c.start}-${c.end}</div>`; }); if(!classes.length) html+=`<div class="class-badge">—</div>`; html+=`</div>`; }); html+=`</div>`; document.getElementById('weeklyScheduleView').innerHTML=html; }
+    function buildWeeklyEditor() { let container = document.getElementById('weeklyEditor'); container.innerHTML=''; weekdays.forEach(day=>{ let div=document.createElement('div'); div.style.marginBottom='12px'; div.style.background='#f1f5f9'; div.style.padding='8px'; div.style.borderRadius='20px'; div.innerHTML=`<strong>${day}</strong> <button class="addClassDayBtn" data-day="${day}" style="padding:2px 8px; font-size:12px;">+ Add</button><div id="editor-${day}"></div>`; container.appendChild(div); function refresh(){ let listDiv=div.querySelector(`#editor-${day}`); listDiv.innerHTML=''; (currentUserData.weeklyClasses[day]||[]).forEach((cls,idx)=>{ let row=document.createElement('div'); row.style.display='flex'; row.style.gap='6px'; row.style.margin='4px 0'; row.innerHTML=`<span style="flex:1;">${escapeHtml(cls.name)} (${cls.start}-${cls.end})</span><button data-day="${day}" data-idx="${idx}" class="delWeeklyBtn" style="background:#b91c1c; padding:2px 8px;">✖</button>`; listDiv.appendChild(row); }); document.querySelectorAll('.delWeeklyBtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ let d=btn.dataset.day, idx2=parseInt(btn.dataset.idx); currentUserData.weeklyClasses[d].splice(idx2,1); persist(); buildWeeklyEditor(); renderWeeklySchedule(); updateRobotEmotion(); }); }); } refresh(); let addBtn = div.querySelector('.addClassDayBtn'); addBtn.addEventListener('click',()=>{ let name=prompt("Class name"); if(!name) return; let start=prompt("Start (HH:MM)"); let end=prompt("End (HH:MM)"); if(start && end) { currentUserData.weeklyClasses[day].push({name,start,end}); persist(); buildWeeklyEditor(); renderWeeklySchedule(); updateRobotEmotion(); } }); }); }
+    
+    // Chart
+    function updateWeeklyChart() {
+        const ctx = document.getElementById('weeklyPerformanceChart').getContext('2d');
+        let completionData = [];
+        currentUserData.userSubjects.forEach(subj => {
+            let tasks = currentUserData.subjectTasks[subj] || [];
+            completionData.push(tasks.filter(t => t.completed).length);
+        });
+        if(weeklyChart) weeklyChart.destroy();
+        weeklyChart = new Chart(ctx, { type: 'bar', data: { labels: currentUserData.userSubjects, datasets: [{ label: 'Completed Tasks', data: completionData, backgroundColor: '#2A5298', borderRadius: 10 }] }, options: { responsive: true, maintainAspectRatio: true } });
+    }
+    
+    // Countdown & Notifications
+    function updateCountdown() { if(!currentUserData.examDate) return; let diff = new Date(currentUserData.examDate) - new Date(); if(diff<=0) document.getElementById('countdownDisplay').innerText="🎉 Exam Day!"; else { let d=Math.floor(diff/864e5), h=Math.floor((diff%864e5)/36e5), m=Math.floor((diff%36e5)/6e4), s=Math.floor((diff%6e4)/1e3); document.getElementById('countdownDisplay').innerText=`${d}d ${h}h ${m}m ${s}s`; } }
+    function startCountdown() { if(countdownInterval) clearInterval(countdownInterval); countdownInterval = setInterval(updateCountdown,1000); updateCountdown(); }
+    function setExamDate() { let y=prompt("Year"), m=prompt("Month (1-12)"), d=prompt("Day"); if(y&&m&&d){ let nd=new Date(parseInt(y), parseInt(m)-1, parseInt(d)); if(!isNaN(nd)){ currentUserData.examDate=nd.toISOString(); persist(); updateCountdown(); } } }
+    function sendNotif(title,body) { if(Notification.permission==='granted') new Notification(title,{body}); else if(Notification.permission!=='denied') Notification.requestPermission(); }
+    function checkGoalNotif() { if(currentUserData.studyMinutesToday>=600 && (currentUserData.studyMinutesToday - (currentUserData.lastGoalNotif||0))>=60){ sendNotif("🎉 Great Focus!","You've studied a lot today!"); currentUserData.lastGoalNotif=currentUserData.studyMinutesToday; persist(); } }
+    function setupReminders() { if(reminderInterval) clearInterval(reminderInterval); if(document.getElementById('reminderToggle').checked) reminderInterval=setInterval(()=>{ sendNotif("Study Reminder","Time to focus!"); },45*60*1000); }
+    async function initAudio() { if(!audioCtx){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); let buffer=audioCtx.createBuffer(2, audioCtx.sampleRate*3, audioCtx.sampleRate); for(let ch=0;ch<2;ch++){ let data=buffer.getChannelData(ch); for(let i=0;i<buffer.length;i++){ let t=i/audioCtx.sampleRate; data[i]=Math.sin(440*Math.PI*2*t)*0.15; } } audioBuffer=buffer; } }
+    async function toggleAudio() { try{ await initAudio(); if(audioCtx.state==='suspended') await audioCtx.resume(); if(audioPlaying && audioSource){ audioSource.stop(); audioPlaying=false; document.getElementById('bgAudioBtn').innerHTML='Play Audio'; } else{ audioSource=audioCtx.createBufferSource(); audioSource.buffer=audioBuffer; audioSource.loop=true; audioSource.connect(audioCtx.destination); audioSource.start(); audioPlaying=true; document.getElementById('bgAudioBtn').innerHTML='Stop Audio'; } }catch(e){ alert("Click again"); } }
+    
+    // Load User Data
+    function loadUserUI() {
+        updateStudyUI(); renderSubjectTasks(); renderWeeklySchedule(); buildWeeklyEditor(); startCountdown(); populateSubjectSelect(); renderSubjectsManager();
+        document.getElementById('userName').value = currentUserData.profile.name || '';
+        document.getElementById('userEmail').value = currentUserData.profile.email || '';
+        document.getElementById('examLevel').value = currentUserData.profile.examLevel || 'OL';
+        document.getElementById('examYear').value = currentUserData.profile.examYear || '';
+        document.getElementById('wakeUpTime').value = currentUserData.wakeUpTime || "07:00";
+        document.getElementById('bedTime').value = currentUserData.bedTime || "23:00";
+        document.getElementById('intervalMinutes').value = currentUserData.studyInterval || 50;
+        document.getElementById('breakMinutes').value = currentUserData.breakInterval || 10;
+        document.getElementById('reminderToggle').checked = currentUserData.reminderEnabled || false;
+        setupReminders();
+        // Generate timetable on load
+        generateAndRenderTimetable('smartTimetableView', currentUserData.wakeUpTime, currentUserData.bedTime, currentUserData.studyInterval, currentUserData.breakInterval);
+        updateRobotEmotion();
+    }
+    
+    function saveProfile() { currentUserData.profile.name = document.getElementById('userName').value; currentUserData.profile.email = document.getElementById('userEmail').value; currentUserData.profile.examLevel = document.getElementById('examLevel').value; currentUserData.profile.examYear = parseInt(document.getElementById('examYear').value) || 2026; persist(); loadUserUI(); alert("Profile saved"); }
+    function saveWeekly() { persist(); alert("Weekly classes saved"); }
+    
+    // Timer controls
+    document.getElementById('startTimerBtn').onclick = () => { if(isRunning) return; isRunning=true; timerInterval=setInterval(()=>{ studySeconds++; currentSessionSeconds++; updateTimerUI(); },1000); };
+    document.getElementById('pauseTimerBtn').onclick = () => { if(!isRunning) return; clearInterval(timerInterval); isRunning=false; recordSession(); persist(); };
+    document.getElementById('resetTimerBtn').onclick = () => { if(isRunning){ clearInterval(timerInterval); isRunning=false; recordSession(); } studySeconds=0; updateTimerUI(); };
+    
+    // Generate timetable from dashboard
+    document.getElementById('generateCustomTimetableBtn').onclick = () => {
+        let wake = document.getElementById('wakeUpTime').value;
+        let bed = document.getElementById('bedTime').value;
+        let interval = parseInt(document.getElementById('intervalMinutes').value);
+        let breakTime = parseInt(document.getElementById('breakMinutes').value);
+        if(!wake || !bed || isNaN(interval) || isNaN(breakTime)) { alert("Please fill all fields"); return; }
+        currentUserData.wakeUpTime = wake;
+        currentUserData.bedTime = bed;
+        currentUserData.studyInterval = interval;
+        currentUserData.breakInterval = breakTime;
+        persist();
+        generateAndRenderTimetable('smartTimetableView', wake, bed, interval, breakTime);
+        updateRobotEmotion();
+    };
+    
+    function refreshFullSchedule() {
+        let wake = document.getElementById('scheduleWakeUp').value || currentUserData.wakeUpTime;
+        let bed = document.getElementById('scheduleBedTime').value || currentUserData.bedTime;
+        let interval = parseInt(document.getElementById('scheduleInterval').value) || currentUserData.studyInterval;
+        let breakT = parseInt(document.getElementById('scheduleBreak').value) || currentUserData.breakInterval;
+        generateAndRenderTimetable('fullScheduleView', wake, bed, interval, breakT);
+    }
+    
+    // Navigation
+    document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('click', () => { document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active')); link.classList.add('active'); document.querySelectorAll('.section').forEach(sec=>sec.classList.remove('active')); document.getElementById(link.dataset.section + 'Section').classList.add('active'); if(link.dataset.section === 'schedule') refreshFullSchedule(); }); });
+    
+    // Event listeners
+    document.getElementById('addSubjectTaskBtn').onclick = addSubjectTask;
+    document.getElementById('refreshScheduleBtn').onclick = refreshFullSchedule;
+    document.getElementById('saveProfileBtn').onclick = saveProfile;
+    document.getElementById('saveWeeklyClassesBtn').onclick = saveWeekly;
+    document.getElementById('openSettingsBtn').onclick = () => { document.querySelector('[data-section="settings"]').click(); };
+    document.getElementById('setCountdownBtn').onclick = setExamDate;
+    document.getElementById('testNotifBtn').onclick = () => sendNotif("Test","Notification works!");
+    document.getElementById('bgAudioBtn').onclick = toggleAudio;
+    document.getElementById('reminderToggle').onchange = () => { currentUserData.reminderEnabled = document.getElementById('reminderToggle').checked; persist(); setupReminders(); };
+    document.getElementById('logoutBtn').onclick = () => { if(timerInterval) clearInterval(timerInterval); if(countdownInterval) clearInterval(countdownInterval); if(reminderInterval) clearInterval(reminderInterval); currentUserEmail=null; currentUserData=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginOverlay').style.display='flex'; document.getElementById('loginFormContainer').style.display='block'; document.getElementById('signupFormContainer').style.display='none'; };
+    
+    // Auth
+    document.getElementById('doLoginBtn').onclick = () => { let email=document.getElementById('loginEmail').value.trim(), pwd=document.getElementById('loginPassword').value; let res=login(email,pwd); if(res.success){ currentUserEmail=email; currentUserData=res.data; document.getElementById('loginOverlay').style.display='none'; document.getElementById('mainApp').style.display='block'; loadUserUI(); studySeconds=0; updateTimerUI(); if(Notification.permission==='default') Notification.requestPermission(); } else document.getElementById('loginError').innerText=res.error; };
+    document.getElementById('doSignupBtn').onclick = () => { let name=document.getElementById('signupName').value.trim(), email=document.getElementById('signupEmail').value.trim(), pwd=document.getElementById('signupPassword').value, level=document.getElementById('signupExamLevel').value, year=parseInt(document.getElementById('signupExamYear').value); if(!name||!email||!pwd||!year){ document.getElementById('signupError').innerText="All fields required"; return; } let res=signup(name,email,pwd,level,year); if(res.success){ alert("Account created! Please login."); document.getElementById('signupFormContainer').style.display='none'; document.getElementById('loginFormContainer').style.display='block'; document.getElementById('loginEmail').value=email; } else document.getElementById('signupError').innerText=res.error; };
+    document.getElementById('showSignupBtn').onclick = () => { document.getElementById('loginFormContainer').style.display='none'; document.getElementById('signupFormContainer').style.display='block'; };
+    document.getElementById('showLoginBtn').onclick = () => { document.getElementById('signupFormContainer').style.display='none'; document.getElementById('loginFormContainer').style.display='block'; };
+</script>
+</body>
+</html>
